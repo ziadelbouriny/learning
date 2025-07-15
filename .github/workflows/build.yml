@@ -21,7 +21,7 @@ jobs:
             -v ${{ github.workspace }}:/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            xc16-gcc try.c -mcpu=33EP256MC506 -o try.elf
+            xc16-gcc tools/try.c -mcpu=33EP256MC506 -o tools/try.elf
 
       - name: Run cppcheck
         run: |
@@ -29,7 +29,7 @@ jobs:
             -v ${{ github.workspace }}:/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            cppcheck try.c
+            cppcheck tools/try.c
 
       - name: Upload ELF as artifact
         uses: actions/upload-artifact@v4
