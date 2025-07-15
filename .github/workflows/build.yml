@@ -21,7 +21,8 @@ jobs:
             -v ${{ github.workspace }}:/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            xc16-gcc tools/try.c -mcpu=33EP256MC506 -o tools/try.elf
+            xc16-gcc tools/try.c -mcpu=33EP256MC506 -c -o tools/try.o
+#            xc16-gcc tools/try.c -mcpu=33EP256MC506 -o tools/try.elf
 
       - name: Run cppcheck
         run: |
