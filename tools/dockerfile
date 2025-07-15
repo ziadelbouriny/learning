@@ -1,0 +1,36 @@
+FROM ubuntu:22.04
+
+# Enable i386 architecture and install necessary packages as root
+RUN dpkg --add-architecture i386 && \
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    wget bzip2 make unzip cppcheck \
+    libncurses5 \
+    libx11-6 \
+    libc6:i386 \
+    libstdc++6:i386 \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    xz-utils \
+    curl \
+    file && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the XC16 installer to container (assumes it’s in the same dir as Dockerfile)
+COPY xc16-v2.10-full-install-linux64-installer.run /tmp/xc16.run
+
+# Install XC16 compiler as root
+RUN chmod +x /tmp/xc16.run && \
+    /tmp/xc16.run --mode unattended --unattendedmodeui minimal --netservername localhost --installdir /opt/microchip/xc16 && \
+    rm /tmp/xc16.run
+
+# Add XC16 compiler to PATH
+ENV PATH="/opt/microchip/xc16/bin:$PATH"
+
+# Create a non-root user named "ubuntu"
+RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 1001 ubuntu
+
+# Switch to non-root user AFTER installations
+USER ubuntu
+WORKDIR /home/ubuntu
+

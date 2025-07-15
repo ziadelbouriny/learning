@@ -1,0 +1,40 @@
+name: Build with XC16 and Run Cppcheck
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: XC16 Build and Static Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile using xc16-gcc in Docker
+        run: |
+          docker run --rm \
+            -v "$PWD":/home/ubuntu/project \
+            -w /home/ubuntu/project \
+            ziadelbouriny/xc16:v2.10 \
+            xc16-gcc try.c -mcpu=33EP256MC506 -o try.elf
+
+      - name: Run cppcheck
+        run: |
+          docker run --rm \
+            -v "$PWD":/home/ubuntu/project \
+            -w /home/ubuntu/project \
+            ziadelbouriny/xc16:v2.10 \
+            cppcheck try.c
+
+      - name: Upload ELF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-elf
+          path: try.elf
+
+
