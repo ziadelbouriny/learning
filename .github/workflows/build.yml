@@ -18,7 +18,7 @@ jobs:
       - name: Compile using xc16-gcc in Docker
         run: |
           docker run --rm \
-            -v "$PWD":/home/ubuntu/project \
+            -v ${{ github.workspace }}:/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
             xc16-gcc try.c -mcpu=33EP256MC506 -o try.elf
@@ -26,7 +26,7 @@ jobs:
       - name: Run cppcheck
         run: |
           docker run --rm \
-            -v "$PWD":/home/ubuntu/project \
+            -v ${{ github.workspace }}:/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
             cppcheck try.c
@@ -35,6 +35,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: compiled-elf
-          path: try.elf
+          path: tools/try.elf
 
 
