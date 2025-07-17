@@ -15,27 +15,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile using xc16-gcc in Docker
+      - name: Compile all .c files in project
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/home/ubuntu/project \
+            -v "${{ github.workspace }}":/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            xc16-gcc tools/try.c -mcpu=33EP256MC506 -c -o tools/try.o
-#            xc16-gcc tools/try.c -mcpu=33EP256MC506 -o tools/try.elf
-
-      - name: Run cppcheck
+            bash -lc "\
+              mkdir -p build && \
+              for src in tools/*.c; do \
+                obj=\"build/$(basename \"${src%.c}.o\")\"; \
+                xc16-gcc \"\$src\" -mcpu=33EP256MC506 -c -o \"\$obj\"; \
+              done && \
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf || true"
+      - name: Run cppcheck on all code
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/home/ubuntu/project \
+            -v "${{ github.workspace }}":/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            cppcheck tools/try.c
+            cppcheck --enable=all --inconclusive --std=c99 tools
 
-      - name: Upload ELF as artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-elf
-          path: tools/try.elf
+          name: build-output
+          path: |
+            build/project.elf
 
 
