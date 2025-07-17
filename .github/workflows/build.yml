@@ -24,26 +24,28 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Collect all include directories with headers
+              # Include directories for headers
               INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
-
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
                 INCLUDES="$INCLUDES -I$inc"
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
-              # Compile all C source files
+              # Compile .c files
               SRC_FILES=$(find . -type f -name "*.c")
+
               for src in $SRC_FILES; do
-                obj="build/${src//\//_}.o"  # safe object filename
-                echo "Compiling $src -> $obj"
-                xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
+                obj_path="build/${src#./}"           # Remove leading ./ and prefix with build/
+                obj_path="${obj_path%.c}.o"          # Change extension to .o
+                mkdir -p "$(dirname "$obj_path")"    # Create directory if not exists
+                echo "Compiling $src -> $obj_path"
+                xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj_path"
               done
 
               echo "Linking all object files..."
-              # Link all compiled object files with required linker flags
-              xc16-gcc build/*.o -mcpu=33EP256MC506 -Wl,--script=p33EP256MC506.gld -lpic30 -lm -o build/project.elf
+              OBJS=$(find build -name "*.o")
+              xc16-gcc $OBJS -mcpu=33EP256MC506 -Wl,--script=p33EP256MC506.gld -lpic30 -lm -o build/project.elf
             '
 
       - name: Run cppcheck on all C files
@@ -61,6 +63,7 @@ jobs:
         with:
           name: compiled-elf
           path: build/project.elf
+
 
 
 
