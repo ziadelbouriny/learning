@@ -24,24 +24,27 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # FIXED: Corrected path — no longer assumes "modules" exists at top level
-              INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
+              # Collect include directories
+              INCLUDE_DIRS=$(find modules -type d -name inc)
+              INCLUDE_DIRS="$INCLUDE_DIRS config/ide/Bright_intern.X/mcc_generated_files config/ide/Bright_intern.X"
 
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
                 INCLUDES="$INCLUDES -I$inc"
               done
-              INCLUDES="$INCLUDES -I. -Imcc_generated_files"
+              INCLUDES="$INCLUDES -I."
 
-              # Compile all .c files
-              SRC_FILES=$(find . -type f -name "*.c")
+              # Find all .c files in modules and project
+              SRC_FILES=$(find modules -type f -name "*.c")
+              SRC_FILES="$SRC_FILES $(find config/ide/Bright_intern.X -type f -name '*.c')"
+
               for src in $SRC_FILES; do
                 obj=build/$(basename "${src%.c}.o")
                 echo "Compiling $src -> $obj"
                 xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
-              echo "Linking all object files..."
+              echo "Linking..."
               xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
             '
 
@@ -52,7 +55,7 @@ jobs:
             -w /workspace \
             ziadelbouriny/xc16:v2.10 \
             bash -eux -c '
-              cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude .
+              cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude modules config
             '
 
       - name: Upload ELF as artifact
@@ -60,9 +63,6 @@ jobs:
         with:
           name: compiled-elf
           path: build/project.elf
-
-
-
 
 
 
