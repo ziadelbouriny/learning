@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile all .c files recursively with xc16-gcc
+      - name: Compile all .c files inside mcc_generated_files with includes
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -24,7 +24,7 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Collect all include directories from MCC headers
+              # Automatically collect all header dirs
               INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
@@ -32,20 +32,21 @@ jobs:
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
-              # Compile only MCC .c files to avoid duplicate definitions
+              # Compile only MCC-generated C sources
               SRC_FILES=$(find mcc_generated_files -type f -name "*.c")
               for src in $SRC_FILES; do
                 obj="build/$(basename "$src" .c).o"
-                echo "Compiling $src -> $obj"
+                echo "Compiling $src --> $obj"
                 xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
-              echo "Linking all object files..."
-              OBJS=$(find build -name "*.o")
+              # Link into project.elf
+              echo "Linking..."
+              OBJS=$(find build -type f -name "*.o")
               xc16-gcc $OBJS -mcpu=33EP256MC506 -o build/project.elf
             '
 
-      - name: Run cppcheck on all C files
+      - name: Run cppcheck on C code
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -55,11 +56,12 @@ jobs:
               cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude .
             '
 
-      - name: Upload ELF as artifact
+      - name: Upload ELF artifact
         uses: actions/upload-artifact@v4
         with:
           name: compiled-elf
           path: build/project.elf
+
 
 
 
