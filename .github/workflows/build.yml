@@ -2,9 +2,9 @@ name: Build with XC16 and Run Cppcheck
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -18,27 +18,30 @@ jobs:
       - name: Compile all .c files recursively with xc16-gcc
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}":/home/ubuntu/project \
-            -w /home/ubuntu/project \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
             ziadelbouriny/xc16:v2.10 \
-            bash -c '\
-              mkdir -p build && \
-              SRC_FILES=$(find tools -type f -name "*.c") && \
-              for src in $SRC_FILES; do \
-                obj=build/$(basename "${src%.c}.o"); \
-                echo "Compiling $src -> $obj"; \
-                xc16-gcc "$src" -mcpu=33EP256MC506 -c -o "$obj" || exit 1; \
-              done && \
-              echo "Linking all object files..." && \
-              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf'
+            bash -eux -c '
+              mkdir -p build
+              SRC_FILES=$(find tools -type f -name "*.c")
+              for src in $SRC_FILES; do
+                obj=build/$(basename "${src%.c}.o")
+                echo "Compiling $src -> $obj"
+                xc16-gcc "$src" -mcpu=33EP256MC506 -c -o "$obj"
+              done
+              echo "Linking all object files..."
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
+            '
 
       - name: Run cppcheck on all C files
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}":/home/ubuntu/project \
-            -w /home/ubuntu/project \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
             ziadelbouriny/xc16:v2.10 \
-            cppcheck --enable=all --inconclusive --quiet tools/
+            bash -eux -c '
+              cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude .
+            '
 
       - name: Upload ELF as artifact
         uses: actions/upload-artifact@v4
