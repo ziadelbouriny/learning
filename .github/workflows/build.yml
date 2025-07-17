@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile all .c files inside mcc_generated_files with includes
+      - name: Compile all .c files recursively with xc16-gcc
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -24,29 +24,28 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Automatically collect all header dirs
-              INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
+              # Collect all unique include directories inside mcc_generated_files/modules
+              INCLUDE_DIRS=$(find mcc_generated_files/modules -type f -name "*.h" -exec dirname {} \; | sort -u)
+
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
                 INCLUDES="$INCLUDES -I$inc"
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
-              # Compile only MCC-generated C sources
-              SRC_FILES=$(find mcc_generated_files -type f -name "*.c")
+              # Compile all .c files (inside project and mcc_generated_files)
+              SRC_FILES=$(find . -type f -name "*.c")
               for src in $SRC_FILES; do
-                obj="build/$(basename "$src" .c).o"
-                echo "Compiling $src --> $obj"
+                obj=build/$(basename "${src%.c}.o")
+                echo "Compiling $src -> $obj"
                 xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
-              # Link into project.elf
-              echo "Linking..."
-              OBJS=$(find build -type f -name "*.o")
-              xc16-gcc $OBJS -mcpu=33EP256MC506 -o build/project.elf
+              echo "Linking all object files into build/project.elf..."
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
             '
 
-      - name: Run cppcheck on C code
+      - name: Run cppcheck on all C files
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -56,11 +55,12 @@ jobs:
               cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude .
             '
 
-      - name: Upload ELF artifact
+      - name: Upload ELF as artifact
         uses: actions/upload-artifact@v4
         with:
           name: compiled-elf
           path: build/project.elf
+
 
 
 
