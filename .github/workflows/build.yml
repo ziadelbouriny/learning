@@ -23,12 +23,23 @@ jobs:
             ziadelbouriny/xc16:v2.10 \
             bash -eux -c '
               mkdir -p build
+
+              # Collect include directories from mcc_generated_files/modules/**/include
+              INCLUDE_DIRS=$(find mcc_generated_files/modules -type d -name include || true)
+              INCLUDES=""
+              for inc in $INCLUDE_DIRS; do
+                INCLUDES="$INCLUDES -I$inc"
+              done
+              INCLUDES="$INCLUDES -I. -Imcc_generated_files"
+
+              # Find all .c files in the project
               SRC_FILES=$(find . -type f -name "*.c")
               for src in $SRC_FILES; do
                 obj=build/$(basename "${src%.c}.o")
                 echo "Compiling $src -> $obj"
-                xc16-gcc "$src" -mcpu=33EP256MC506 -c -o "$obj"
+                xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
+
               echo "Linking all object files..."
               xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
             '
