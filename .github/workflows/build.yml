@@ -23,7 +23,7 @@ jobs:
             ziadelbouriny/xc16:v2.10 \
             bash -eux -c '
               mkdir -p build
-              SRC_FILES=$(find tools -type f -name "*.c")
+              SRC_FILES=$(find . -type f -name "*.c")
               for src in $SRC_FILES; do
                 obj=build/$(basename "${src%.c}.o")
                 echo "Compiling $src -> $obj"
