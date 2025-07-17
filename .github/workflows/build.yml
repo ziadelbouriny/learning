@@ -15,33 +15,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile all .c files recursively
+      - name: Compile all .c files recursively with xc16-gcc
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            bash -c "\
+            bash -c '\
               mkdir -p build && \
-              find tools -name '*.c' | while read src; do \
-                obj=\"build/$(basename \"${src%.c}.o\")\"; \
-                xc16-gcc \"\$src\" -mcpu=33EP256MC506 -c -o \"\$obj\"; \
+              SRC_FILES=$(find tools -type f -name "*.c") && \
+              for src in $SRC_FILES; do \
+                obj=build/$(basename "${src%.c}.o"); \
+                echo "Compiling $src -> $obj"; \
+                xc16-gcc "$src" -mcpu=33EP256MC506 -c -o "$obj" || exit 1; \
               done && \
-              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf"
+              echo "Linking all object files..." && \
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf'
 
-      - name: Run cppcheck on all code
+      - name: Run cppcheck on all C files
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            cppcheck --enable=all --inconclusive --std=c99 tools
+            cppcheck --enable=all --inconclusive --quiet tools/
 
-      - name: Upload build artifacts
+      - name: Upload ELF as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-output
-          path: |
-            build/project.elf
+          name: compiled-elf
+          path: build/project.elf
+
 
 
