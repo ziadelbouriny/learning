@@ -24,13 +24,16 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Collect include directories from mcc_generated_files/modules/**/include
-              INCLUDE_DIRS=$(find mcc_generated_files/modules -type d -name include || true)
+              # Find all directories that contain .h files (regardless of folder name)
+              INCLUDE_DIRS=$(find mcc_generated_files -type f -name '*.h' -exec dirname {} \; | sort -u)
+
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
                 INCLUDES="$INCLUDES -I$inc"
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
+
+              
 
               # Find all .c files in the project
               SRC_FILES=$(find . -type f -name "*.c")
