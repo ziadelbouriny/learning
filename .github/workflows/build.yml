@@ -15,19 +15,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compile all .c files in project
+      - name: Compile all .c files recursively
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/home/ubuntu/project \
             -w /home/ubuntu/project \
             ziadelbouriny/xc16:v2.10 \
-            bash -lc "\
+            bash -c "\
               mkdir -p build && \
-              for src in tools/*.c; do \
+              find tools -name '*.c' | while read src; do \
                 obj=\"build/$(basename \"${src%.c}.o\")\"; \
                 xc16-gcc \"\$src\" -mcpu=33EP256MC506 -c -o \"\$obj\"; \
               done && \
-              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf || true"
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf"
+
       - name: Run cppcheck on all code
         run: |
           docker run --rm \
