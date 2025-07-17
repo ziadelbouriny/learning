@@ -56,6 +56,13 @@ jobs:
             ziadelbouriny/xc16:v2.10 \
             bash -eux -c '
               cppcheck --enable=all --inconclusive --quiet --suppress=missingInclude modules config
+
+
+      - name: Upload cppcheck report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppcheck-report
+          path: cppcheck_report.txt        
             '
 
       - name: Upload ELF as artifact
