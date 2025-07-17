@@ -41,11 +41,11 @@ jobs:
               for src in $SRC_FILES; do
                 obj=build/$(basename "${src%.c}.o")
                 echo "Compiling $src -> $obj"
-                xc16-gcc $INCLUDES "$src" --chip=33EP256MC506 -c -o "$obj"
+                xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
               echo "Linking..."
-              xc16-gcc build/*.o --chip=33EP256MC506 -o build/project.elf
+              xc16-gcc -mcpu=33EP256MC506 build/*.o -o build/project.elf
             '
 
       - name: Run cppcheck on all C files
