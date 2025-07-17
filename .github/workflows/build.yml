@@ -24,8 +24,8 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Find all directories that contain .h files (regardless of folder name)
-              INCLUDE_DIRS=$(find mcc_generated_files -type f -name '*.h' -exec dirname {} \; | sort -u)
+              # Collect all include directories with headers
+              INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
 
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
@@ -33,18 +33,17 @@ jobs:
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
-              
-
-              # Find all .c files in the project
+              # Compile all C source files
               SRC_FILES=$(find . -type f -name "*.c")
               for src in $SRC_FILES; do
-                obj=build/$(basename "${src%.c}.o")
+                obj="build/${src//\//_}.o"  # safe object filename
                 echo "Compiling $src -> $obj"
                 xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
               echo "Linking all object files..."
-              xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
+              # Link all compiled object files with required linker flags
+              xc16-gcc build/*.o -mcpu=33EP256MC506 -Wl,--script=p33EP256MC506.gld -lpic30 -lm -o build/project.elf
             '
 
       - name: Run cppcheck on all C files
@@ -62,6 +61,7 @@ jobs:
         with:
           name: compiled-elf
           path: build/project.elf
+
 
 
 
