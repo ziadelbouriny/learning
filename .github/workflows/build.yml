@@ -33,7 +33,7 @@ jobs:
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
               # Compile .c files
-              SRC_FILES=$(find mcc_generated_files -type f -name "*.c")
+              SRC_FILES=$(find modules -type f -name "*.c")
 
               for src in $SRC_FILES; do
                 obj_path="build/${src#./}"           # Remove leading ./ and prefix with build/
