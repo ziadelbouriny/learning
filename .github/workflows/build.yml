@@ -24,8 +24,8 @@ jobs:
             bash -eux -c '
               mkdir -p build
 
-              # Collect all unique include directories inside mcc_generated_files/modules
-              INCLUDE_DIRS=$(find mcc_generated_files/modules -type f -name "*.h" -exec dirname {} \; | sort -u)
+              # FIXED: Corrected path — no longer assumes "modules" exists at top level
+              INCLUDE_DIRS=$(find mcc_generated_files -type f -name "*.h" -exec dirname {} \; | sort -u)
 
               INCLUDES=""
               for inc in $INCLUDE_DIRS; do
@@ -33,7 +33,7 @@ jobs:
               done
               INCLUDES="$INCLUDES -I. -Imcc_generated_files"
 
-              # Compile all .c files (inside project and mcc_generated_files)
+              # Compile all .c files
               SRC_FILES=$(find . -type f -name "*.c")
               for src in $SRC_FILES; do
                 obj=build/$(basename "${src%.c}.o")
@@ -41,7 +41,7 @@ jobs:
                 xc16-gcc $INCLUDES "$src" -mcpu=33EP256MC506 -c -o "$obj"
               done
 
-              echo "Linking all object files into build/project.elf..."
+              echo "Linking all object files..."
               xc16-gcc build/*.o -mcpu=33EP256MC506 -o build/project.elf
             '
 
@@ -60,6 +60,7 @@ jobs:
         with:
           name: compiled-elf
           path: build/project.elf
+
 
 
 
